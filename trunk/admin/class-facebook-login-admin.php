@@ -90,7 +90,9 @@ class Facebook_Login_Admin {
 	public function admin_scripts() {
 
 		global $pagenow;
-		if (  ( isset($_GET['page']) && 'facebook_login' == $_GET['page']  ) || $pagenow == 'profile.php' ) {
+
+		$page = sanitize_text_field( $_GET['page'] );
+		if (  ( ! empty($page) && 'facebook_login' === $page  ) || $pagenow === 'profile.php' ) {
 
 			wp_enqueue_style( 'fbl-admin-css', plugins_url( 'assets/css/admin.css', __FILE__ ) , '', $this->version );
 			wp_enqueue_style( 'fbl-public-css', plugins_url( 'public/css/facebook-login.css', dirname( __FILE__ ) ) , '', $this->version );
@@ -100,7 +102,7 @@ class Facebook_Login_Admin {
 				'site_url'     => home_url(),
 				'scopes'       => apply_filters('fbl/app_scopes','email,public_profile'),
 				'l18n'         => array(
-					'chrome_ios_alert'      => __( 'Please login into facebook and then click connect button again', 'fbl' ),
+					'chrome_ios_alert'      => esc_html__( 'Please login into facebook and then click connect button again', 'fbl' ),
 				)
 			)));
 		}
@@ -112,13 +114,13 @@ class Facebook_Login_Admin {
 	 * @since 1.1
 	 */
 	public function profile_buttons( $user ) {
-		?><h3><?php _e("Facebook connection", "blank"); ?></h3><?php
+		?><h3><?php esc_html_e("Facebook connection", "blank"); ?></h3><?php
 		$fb_id = get_user_meta( $user->ID, '_fb_user_id' );
 		if( $fb_id ) {
-			echo '<p>' . __( 'Your profile is currently linked to your Facebook account. Click the button below to remove connection and avatar', 'fbl' ) . '</p>';
+			echo '<p>' . esc_html__( 'Your profile is currently linked to your Facebook account. Click the button below to remove connection and avatar', 'fbl' ) . '</p>';
 			do_action('facebook_disconnect_button');
 		} else {
-			echo '<p>' . __( 'Link your facebook account to your profile.', 'fbl' ) . '</p>';
+			echo '<p>' . esc_html__( 'Link your facebook account to your profile.', 'fbl' ) . '</p>';
 			do_action('facebook_login_button');
 		}
 	}
