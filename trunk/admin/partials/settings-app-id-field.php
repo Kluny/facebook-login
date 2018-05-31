@@ -10,5 +10,5 @@
  */
 ?>
 
-<input type="text" name="fbl_settings[fb_id]" value="<?php echo $fb_id; ?>" placeholder="Facebook App id" />
-<p class="description" ><?php _e('Create a new app and paste App Id here', 'fbl');?></p>
+<input type="text" name="fbl_settings[fb_id]" value="<?php echo esc_attr( $fb_id ); ?>" placeholder="<?php esc_html_e( 'Facebook App id', 'fbl' ); ?>" />
+<p class="description" ><?php esc_html_e('Create a new app and paste App Id here', 'fbl');?></p>
