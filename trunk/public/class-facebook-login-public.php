@@ -115,10 +115,14 @@ class Facebook_Login_Public {
 	 * @since   1.0.0
 	 */
 	public function print_button() {
-		// TODO: refactor this method
-		$redirect = ! empty( $_GET['redirect_to'] )
-                    ? esc_url($_GET['redirect_to'])
-                    : ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		$redirect = home_url() . '/' . $_SERVER['REQUEST_URI'];
+
+        if( ! empty( $_GET['redirect_to'] ) ) {
+	        $server = strpos( $_GET['redirect_to'], home_url() );
+            if( $server === 0 ) {
+                $redirect = esc_url( $_GET['redirect_to'] );
+            }
+        }
 
 		// if we are in login page we don't want to redirect back to it
 		if ( isset( $GLOBALS['pagenow'] )
@@ -132,7 +136,7 @@ class Facebook_Login_Public {
                         data-redirect="' . apply_filters( 'flp/redirect_url', $redirect ).'" 
                         data-fb_nonce="' . wp_create_nonce( 'facebook-nonce' ).'">
                 <img data-no-lazy="1" 
-			            src="'.plugin_dir_url(__FILE__ ) . 'img/loading.svg'.'" 
+			            src="' . plugin_dir_url(__FILE__ ) . 'img/loading.svg' . '" 
 			            alt="" 
 			            class="fbl-spinner"/>
 		        <div class="fb-login-button" 
@@ -157,10 +161,18 @@ class Facebook_Login_Public {
 	 * @since 1.1
 	 */
 	public function print_disconnect_button( ) {
-        //TODO: refactor this method
-		$redirect = apply_filters( 'flp/disconnect_redirect_url', ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
+		$redirect = apply_filters( 'flp/disconnect_redirect_url', home_url() . '/' . $_SERVER['REQUEST_URI'] );
 
-		echo apply_filters('fbl/disconnect_button', '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect='.urlencode( $redirect ).'" class="css-fbl "><div>'. __('Disconnect Facebook', 'fbl') .'<img data-no-lazy="1" src="'.site_url('/wp-includes/js/mediaelement/loading.gif').'" alt="" style="display:none"/></div></a>');
+		echo apply_filters('fbl/disconnect_button',
+            '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect='.urlencode( $redirect ).'" class="css-fbl ">
+                <div>'. __('Disconnect Facebook', 'fbl') .'
+                    <img data-no-lazy="1" 
+                            src="' . site_url('/wp-includes/js/mediaelement/loading.gif') . '" 
+                            alt="" 
+                            style="display:none"/>
+                </div>
+            </a>'
+        );
 
 	}
 	/**
@@ -185,7 +197,7 @@ class Facebook_Login_Public {
 			function fbl_init(){
 			    try{
 	                window.FB.init({
-	                    appId      : '<?php echo trim( $this->opts['fb_id'] );?>',
+	                    appId      : '<?php echo trim( esc_attr( $this->opts['fb_id'] ) );?>',
 	                    cookie     : true,
 	                    xfbml      : true,
 	                    status     : false,
@@ -213,7 +225,7 @@ class Facebook_Login_Public {
 				var js, fjs = d.getElementsByTagName(s)[0];
 				if (d.getElementById(id)) return;
 				js = d.createElement(s); js.id = id;
-				js.src = "//connect.facebook.net/<?= $this->locale;?>/sdk.js";
+				js.src = "//connect.facebook.net/<?php echo esc_attr( $this->locale ); ?>/sdk.js";
 				fjs.parentNode.insertBefore(js, fjs);
 			}(document, 'script', 'facebook-jssdk'));
 

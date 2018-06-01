@@ -16,7 +16,7 @@ class Fbl_Notices {
 	 * @since    1.0.4.1
 	 */
 	public function __construct( ) {
-	    $rate_plugin = sanitize_text_field( $_GET['fbl_notice'] );
+	    $rate_plugin = isset( $_GET['fbl_notice'] ) ? sanitize_text_field( $_GET['fbl_notice'] ) : '';
 		if( ! empty( $rate_plugin) && 'rate_plugin' === $rate_plugin ){
 			update_option('fbl_'.$rate_plugin, true);
 		}

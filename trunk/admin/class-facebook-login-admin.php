@@ -91,7 +91,7 @@ class Facebook_Login_Admin {
 
 		global $pagenow;
 
-		$page = sanitize_text_field( $_GET['page'] );
+		$page = isset( $_GET['page'] ) ? sanitize_text_field( $_GET['page'] ) : '';
 		if (  ( ! empty($page) && 'facebook_login' === $page  ) || $pagenow === 'profile.php' ) {
 
 			wp_enqueue_style( 'fbl-admin-css', plugins_url( 'assets/css/admin.css', __FILE__ ) , '', $this->version );
