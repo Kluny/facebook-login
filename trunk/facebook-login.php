@@ -55,6 +55,11 @@ register_deactivation_hook( __FILE__, 'deactivate_facebook_login' );
 require plugin_dir_path( __FILE__ ) . 'includes/class-facebook-login.php';
 
 /**
+ * Wrappers for user_meta methods to allow use of user_attributes on VIP.
+ */
+require plugin_dir_path( __FILE__ ) . 'includes/user_meta_wrappers.php';
+
+/**
  * Begins execution of the plugin.
  *
  * Since everything within the plugin is registered via hooks,
