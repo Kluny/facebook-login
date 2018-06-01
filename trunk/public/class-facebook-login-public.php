@@ -164,7 +164,7 @@ class Facebook_Login_Public {
 		$redirect = apply_filters( 'flp/disconnect_redirect_url', home_url() . '/' . $_SERVER['REQUEST_URI'] );
 
 		echo apply_filters('fbl/disconnect_button',
-            '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect='.urlencode( $redirect ).'" class="css-fbl ">
+            '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect='.rawurlencode( $redirect ).'" class="css-fbl ">
                 <div>'. __('Disconnect Facebook', 'fbl') .'
                     <img data-no-lazy="1" 
                             src="' . site_url('/wp-includes/js/mediaelement/loading.gif') . '" 
@@ -276,9 +276,9 @@ class Facebook_Login_Public {
 		}
 
 		if( function_exists( 'vip_safe_remote_get' ) ) {
-			$fb_response = vip_safe_remote_get( esc_url_raw( $fb_url ), array( 'timeout' => 30 ) );
+			$fb_response = vip_safe_remote_get( esc_url_raw( $fb_url ), array( 'timeout' => 5 ) );
 		} else {
-			$fb_response = wp_remote_get( esc_url_raw( $fb_url ), array( 'timeout' => 30 ) );
+			$fb_response = wp_remote_get( esc_url_raw( $fb_url ), array( 'timeout' => 5 ) );
 		}
 
 		if( is_wp_error( $fb_response ) )
@@ -408,7 +408,7 @@ class Facebook_Login_Public {
 			// get avatar with facebook id
 			if ( $fb_id = fbl_get_user_meta( $user_id, '_fb_user_id', true ) ) {
 				$fb_url = 'https://graph.facebook.com/' . $fb_id . '/picture?width=' . $size . '&height=' . $size;
-				$avatar = "<img alt='{$alt}' src='{$fb_url}' class='avatar avatar-{$size} photo' height='{$size}' width='{$size}' />";
+				$avatar = "<img alt='" . esc_attr( $alt ) . "' src='" . esc_url( $fb_url ) . "' class='avatar avatar-" .  esc_attr( $size ) . " photo' height='" .  esc_attr( $size ) . "' width='" .  esc_attr( $size ) . "' />";
 			}
 
 		}
