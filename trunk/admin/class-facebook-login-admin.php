@@ -115,7 +115,7 @@ class Facebook_Login_Admin {
 	 */
 	public function profile_buttons( $user ) {
 		?><h3><?php esc_html_e("Facebook connection", "blank"); ?></h3><?php
-		$fb_id = fbl_get_user_meta( $user->ID, '_fb_user_id' );
+		$fb_id = get_user_meta( $user->ID, '_fb_user_id' );
 		if( $fb_id ) {
 			echo '<p>' . esc_html__( 'Your profile is currently linked to your Facebook account. Click the button below to remove connection and avatar', 'fbl' ) . '</p>';
 			do_action('facebook_disconnect_button');

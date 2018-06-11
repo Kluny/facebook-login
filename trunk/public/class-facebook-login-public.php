@@ -331,7 +331,7 @@ class Facebook_Login_Public {
 			$user_id = $this->register_user( apply_filters( 'fbl/user_data_register',$user ) );
 			if( !is_wp_error( $user_id ) ) {
 				$this->notify_new_registration( $user_id );
-				fbl_update_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
+				update_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
 				$meta_updated = true;
 				$status = array( 'success' => $user_id, 'method' => 'registration' );
 			}
@@ -339,7 +339,7 @@ class Facebook_Login_Public {
 		if( is_numeric( $user_id ) ) {
 			wp_set_auth_cookie( $user_id, true );
 			if( !$meta_updated )
-				fbl_delete_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
+				delete_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
 			    do_action( 'fbl/after_login', $user, $user_id);
 		}
 		$this->ajax_response( apply_filters( 'fbl/success_status', $status ) );
@@ -406,7 +406,7 @@ class Facebook_Login_Public {
 			$user_id = $user->data->ID;
 
 			// get avatar with facebook id
-			if ( $fb_id = fbl_get_user_meta( $user_id, '_fb_user_id', true ) ) {
+			if ( $fb_id = get_user_meta( $user_id, '_fb_user_id', true ) ) {
 				$fb_url = 'https://graph.facebook.com/' . $fb_id . '/picture?width=' . $size . '&height=' . $size;
 				$avatar = "<img alt='" . esc_attr( $alt ) . "' src='" . esc_url( $fb_url ) . "' class='avatar avatar-" .  esc_attr( $size ) . " photo' height='" .  esc_attr( $size ) . "' width='" .  esc_attr( $size ) . "' />";
 			}
@@ -436,7 +436,7 @@ class Facebook_Login_Public {
 	public function bp_core_fetch_avatar( $img, $params, $item_id, $avatar_dir, $html_css_id, $html_width, $html_height, $avatar_folder_url, $avatar_folder_dir ) {
 
 		// if not a facebook user return default img otherwise calculate it
-		$fb_id = fbl_get_user_meta( $params['item_id'], '_fb_user_id', true );
+		$fb_id = get_user_meta( $params['item_id'], '_fb_user_id', true );
 		if ( empty( $fb_id ) )
 			return $img;
 
@@ -517,7 +517,7 @@ class Facebook_Login_Public {
 		if( $params['object'] != 'user' )
 			return $avatar_url;
 
-		$fb_id = fbl_get_user_meta( $params['item_id'], '_fb_user_id', true );
+		$fb_id = get_user_meta( $params['item_id'], '_fb_user_id', true );
 
 		if ( empty($fb_id) )
 			return $avatar_url;
@@ -660,7 +660,7 @@ class Facebook_Login_Public {
 		?>
 		<div id="fbl_connection">
 		<label for="fbl_connection"><?php _e("Facebook connection", 'fbl'); ?></label><?php
-		$fb_id = fbl_get_user_meta( $current_user->ID, '_fb_user_id' );
+		$fb_id = get_user_meta( $current_user->ID, '_fb_user_id' );
 		if( $fb_id ) {
 			_e( 'Your profile is currently linked to your Facebook account. Click the button below to remove connection and avatar', 'fbl' );
 			do_action('facebook_disconnect_button');
@@ -685,7 +685,7 @@ class Facebook_Login_Public {
 		if ( !current_user_can( 'edit_user', $current_user->ID ) || ! isset( $_GET['fbl_disconnect'] ) || ! wp_verify_nonce( $_GET['fb_nonce'], 'fbl_disconnect' ) )
 			return;
 
-		fbl_delete_user_meta( $current_user->ID, '_fb_user_id' );
+		delete_user_meta( $current_user->ID, '_fb_user_id' );
 		// refresh page
 		wp_redirect( esc_url( $_GET['redirect'] ) );
 		exit();
