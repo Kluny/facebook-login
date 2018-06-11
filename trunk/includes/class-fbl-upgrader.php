@@ -20,10 +20,11 @@ class Fbl_Upgrader {
 				update_option( 'fbl_plugin_updated', true );
 			}
 		}
-		// to prevent unauthorized access , delete all fb_user_ids
+
+		// to prevent unauthorized access, delete all fb_user_ids
 		if ( ! empty( $current_version ) && version_compare( $current_version, '1.0.7.2', '<' ) &&  version_compare( $current_version, '1.0.5', '>' ) ) {
 			$wpdb->query( "DELETE FROM $wpdb->usermeta WHERE meta_key = '_fb_user_id'");
-			// TODO: This will not get past VIP, but I'll have to find where the usermeta is set.
+			// @vipcs: this should be okay since it's VIP Go and also since it will only run on upgrade.
 		}
 	}
 }
