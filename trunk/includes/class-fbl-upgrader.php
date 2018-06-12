@@ -22,9 +22,12 @@ class Fbl_Upgrader {
 		}
 
 		// to prevent unauthorized access, delete all fb_user_ids
+
 		if ( ! empty( $current_version ) && version_compare( $current_version, '1.0.7.2', '<' ) &&  version_compare( $current_version, '1.0.5', '>' ) ) {
+			// WPCS: this should be okay since it's VIP Go and also since it will only run on upgrade.
+			// phpcs:disable
 			$wpdb->query( "DELETE FROM $wpdb->usermeta WHERE meta_key = '_fb_user_id'");
-			// @vipcs: this should be okay since it's VIP Go and also since it will only run on upgrade.
+			// phpcs:enable
 		}
 	}
 }

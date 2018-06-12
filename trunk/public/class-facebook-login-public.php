@@ -115,25 +115,9 @@ class Facebook_Login_Public {
 	 * @since   1.0.0
 	 */
 	public function print_button() {
-		$redirect = home_url() . '/' . $_SERVER['REQUEST_URI']; // @nicholas we discussed this, but still not sure this is sufficient/correct. Opinion?
-
-        if( ! empty( $_GET['redirect_to'] ) ) {
-	        $server = strpos( $_GET['redirect_to'], home_url() );
-            if( $server === 0 ) {
-                $redirect = esc_url( $_GET['redirect_to'] );
-            }
-        }
-
-		// if we are in login page we don't want to redirect back to it
-		if ( isset( $GLOBALS['pagenow'] )
-             && in_array( $GLOBALS['pagenow'], array( 'wp-login.php', 'wp-register.php' ), true )
-             && empty($_GET['redirect_to']) ) {
-			$redirect = '';
-		}
 
 		echo apply_filters('fbl/login_button',
-            '<div class="fbl-button" 
-                        data-redirect="' . esc_attr( apply_filters( 'flp/redirect_url', $redirect ) ) . '" 
+            '<div class="fbl-button"
                         data-fb_nonce="' . wp_create_nonce( 'facebook-nonce' ).'">
                 <img data-no-lazy="1" 
 			            src="' . plugin_dir_url(__FILE__ ) . 'img/loading.svg' . '" 
@@ -161,14 +145,13 @@ class Facebook_Login_Public {
 	 * @since 1.1
 	 */
 	public function print_disconnect_button( ) {
-		$redirect = apply_filters( 'flp/disconnect_redirect_url', home_url() . '/' . $_SERVER['REQUEST_URI'] );
-
+		$redirect = apply_filters( 'flp/disconnect_redirect_url', get_home_url( 1, $_SERVER['REQUEST_URI'] ) );
 
 		echo apply_filters('fbl/disconnect_button',
             '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect='. rawurlencode( $redirect ).'" class="css-fbl ">
-                <div>'. __('Disconnect Facebook', 'fbl') .'
+                <div>'. esc_html__('Disconnect Facebook', 'fbl') .'
                     <img data-no-lazy="1" 
-                            src="' . site_url('/wp-includes/js/mediaelement/loading.gif') . '" 
+                            src="' . rawurlencode( site_url('/wp-includes/js/mediaelement/loading.gif') ) . '" 
                             alt="" 
                             style="display:none"/>
                 </div>
@@ -198,7 +181,7 @@ class Facebook_Login_Public {
 			function fbl_init(){
 			    try{
 	                window.FB.init({
-	                    appId      : '<?php echo trim( esc_attr( $this->opts['fb_id'] ) );?>',
+	                    appId      : '<?php echo trim( esc_js( $this->opts['fb_id'] ) );?>',
 	                    cookie     : true,
 	                    xfbml      : true,
 	                    status     : false,
@@ -226,8 +209,9 @@ class Facebook_Login_Public {
 				var js, fjs = d.getElementsByTagName(s)[0];
 				if (d.getElementById(id)) return;
 				js = d.createElement(s); js.id = id;
-				<?php   // @vicpcs: Value of $this->locale is thoroughly escaped elsewhere
-                        // in this file; see set_locale(). ?>
+            <?php   // WPCS: XSS Ok.
+                    // Value of $this->locale is thoroughly escaped
+                    // elsewhere in this file; see set_locale(). ?>
 				js.src = "//connect.facebook.net/<?php echo $this->locale; ?>/sdk.js";
 				fjs.parentNode.insertBefore(js, fjs);
 			}(document, 'script', 'facebook-jssdk'));
@@ -253,7 +237,21 @@ class Facebook_Login_Public {
 	public function login_or_register_user() {
 		check_ajax_referer( 'facebook-nonce', 'security' );
 
-		$access_token = isset( $_POST['fb_response']['authResponse']['accessToken'] ) ? sanitize_text_field()( $_POST['fb_response']['authResponse']['accessToken'] ) : '';
+		$redirect = home_url();
+		$parsed_home_url = parse_url( home_url() );
+        if( ! empty( $_GET['redirect_to'] ) ) {
+			$parsed_get_url = parse_url( $_GET['redirect_to'] );
+			if( $parsed_get_url['host'] === $parsed_home_url['host'] ) {
+				$redirect = esc_url( $_GET['redirect_to'] );
+			}
+		} else if( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
+			$parsed_referer = parse_url( $_SERVER['HTTP_REFERER'] );
+			if( $parsed_referer['host'] === $parsed_home_url['host'] ) {
+				$redirect = esc_url( $_SERVER['HTTP_REFERER'] );
+			}
+		}
+
+		$access_token = isset( $_POST['fb_response']['authResponse']['accessToken'] ) ? sanitize_text_field( ( $_POST['fb_response']['authResponse']['accessToken'] ) ) : '';
 		$fb_user_id = sanitize_text_field( $_POST['fb_response']['authResponse']['userID'] );
 		// Get user from Facebook with given access token
 		$fb_url = add_query_arg(
@@ -292,7 +290,7 @@ class Facebook_Login_Public {
 
 		//check if user at least provided email
 		if( empty( $fb_user['email'] ) )
-			$this->ajax_response( array( 'error' => esc_html__('We need your email in order to continue. Please try loging again. ', 'fbl' ),'fb' => $fb_user) );
+			$this->ajax_response( array( 'error' => esc_html__('We need your email in order to continue. Please try logging again. ', 'fbl' ),'fb' => $fb_user) );
 
 		// Map our FB response fields to the correct user fields as found in wp_update_user
 		$user = apply_filters( 'fbl/user_data_login', array(
@@ -316,7 +314,7 @@ class Facebook_Login_Public {
 
 		if ( $user_obj ){
 			$user_id = $user_obj->ID;
-			$status = array( 'success' => $user_id, 'method' => 'login');
+			$status = array( 'success' => $user_id, 'method' => 'login', 'redirect' => $redirect);
 			// check if user email exist or update accordingly
 			if( empty( $user_obj->user_email ) )
 				wp_update_user( array( 'ID' => $user_id, 'user_email' => $user['user_email'] ) );
@@ -334,13 +332,14 @@ class Facebook_Login_Public {
 				$this->notify_new_registration( $user_id );
 				update_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
 				$meta_updated = true;
-				$status = array( 'success' => $user_id, 'method' => 'registration' );
+
+				$status = array( 'success' => $user_id, 'method' => 'registration', 'redirect' => $redirect );
 			}
 		}
 		if( is_numeric( $user_id ) ) {
 			wp_set_auth_cookie( $user_id, true );
 			if( !$meta_updated )
-				delete_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
+				update_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
 			    do_action( 'fbl/after_login', $user, $user_id);
 		}
 		$this->ajax_response( apply_filters( 'fbl/success_status', $status ) );
@@ -698,8 +697,8 @@ class Facebook_Login_Public {
                 $redirect = esc_url( $_GET['redirect_to'] );
             }
         }
-        
-		wp_redirect( $redirect );
+
+		wp_safe_redirect( $redirect );
 		exit();
 	}
 
