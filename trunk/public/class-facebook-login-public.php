@@ -148,7 +148,7 @@ class Facebook_Login_Public {
 		$redirect = apply_filters( 'flp/disconnect_redirect_url', get_home_url( 1, $_SERVER['REQUEST_URI'] ) );
 
 		echo apply_filters('fbl/disconnect_button',
-            '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect='. rawurlencode( $redirect ).'" class="css-fbl ">
+            '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect_to='. rawurlencode( $redirect ).'" class="css-fbl ">
                 <div>'. esc_html__('Disconnect Facebook', 'fbl') .'
                     <img data-no-lazy="1" 
                             src="' . rawurlencode( site_url('/wp-includes/js/mediaelement/loading.gif') ) . '" 
@@ -690,13 +690,14 @@ class Facebook_Login_Public {
 		delete_user_meta( $current_user->ID, '_fb_user_id' );
 		// refresh page
 
-        $redirect = home_url();
-        if( ! empty( $_GET['redirect'] ) ) {
-            $server = strpos( $_GET['redirect'], home_url() );
-            if( $server === 0 ) {
-                $redirect = esc_url( $_GET['redirect_to'] );
-            }
-        }
+		$redirect = home_url();
+		$parsed_home_url = parse_url( home_url() );
+		if( ! empty( $_GET['redirect_to'] ) ) {
+			$parsed_get_url = parse_url( $_GET['redirect_to'] );
+			if( $parsed_get_url['host'] === $parsed_home_url['host'] ) {
+				$redirect = esc_url( $_GET['redirect_to'] );
+			}
+		}
 
 		wp_safe_redirect( $redirect );
 		exit();
