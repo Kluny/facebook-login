@@ -606,13 +606,37 @@ class Facebook_Login_Public {
 		// "Generate" unique suffix. Finds out how many existing users are in the database with the given username (minus numerical suffix), and appends that number to the new username as a pseudounique suffix.
         // Eg. "SELECT 1 + SUBSTR(user_login, 9) FROM wp_users WHERE user_login REGEXP '^shannon(-[0-9]+)?$' ORDER BY 1 DESC LIMIT 1".
         // If user 'shannon' exists, result is one field in one row containing "1". That number is appended to username.
-		$suffix = $wpdb->get_var( $wpdb->prepare(
-			"SELECT 1 + SUBSTR(user_login, %d) FROM $wpdb->users WHERE user_login REGEXP %s ORDER BY 1 DESC LIMIT 1",
-			strlen( $username ) + 2, '^' . $username . '(-[0-9]+)?$' ) );
+		$args = array(
+			'search'         => esc_attr( $username ) . '*',
+			'search_columns' => array( 'user_login' ),
+			'fields'         => array( 'user_login' ),
+			'count_total'    => false,
+			'orderby'        => 'user_login',
+			'order'          => 'DESC'
+		);
 
-		if( !empty( $suffix ) ) {
-			$username .= "-{$suffix}";
+		$user_query = new \WP_User_Query( $args );
+		$users = $user_query->get_results();
+		if ( ! empty( $users ) ) {
+			// pluck the user_login into an array
+			$users = wp_list_pluck( $users, 'user_login' );
+			// filter the user_login to limit to the `username-` pattern
+			$users = preg_grep( '/^' . $username . '(-[0-9]+)?$/', $users );
+
+			// get the first user_login, the query already sorted the user_login in DESC order
+			if ( ! empty( $users ) && is_array( $users ) && ! empty( $first_user = array_shift( $users ) ) ) {
+				// Get the int suffix
+				$suffix = (int) str_replace( "$username-", '', $first_user );
+				// if we have a valid int suffix, increment it and add it to the username
+				if ( ! empty( $suffix ) ) {
+					$username .= '-' . ++$suffix;
+				} else if ( $first_user === $username ) {
+					// we already have a user with the same login, append 1 as the suffix
+					$username .= '-1';
+				}
+			}
 		}
+		
 		return apply_filters( 'fbl/generateUsername', $username );
 	}
 
