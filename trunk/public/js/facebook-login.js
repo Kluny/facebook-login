@@ -47,11 +47,17 @@ function fbl_loginCheck() {
                         $('.fbl-spinner').hide();
                         $('.fb-login-button').show();
 
+                        var errorMessage = document.createElement('p')
+                        errorMessage.setAttribute('class', 'fbl_error');
+                        errorMessage.append(document.createTextNode(data.error));
+
                         if ($form_obj.length) {
-                            $form_obj.append('<p class="fbl_error">' + data.error + '</p>');
+                            var node = document.createElement('p');
+                            node.setAttribute('class', 'fbl_error').createTextNode(data.error);
+                            $form_obj.append(errorMessage);
                         } else {
                             // we just have a button
-                            $('<p class="fbl_error">' + data.error + '</p>').insertAfter(button);
+                            $(errorMessage).insertAfter(button);
                         }
                         // if we had any error remove user from app so we request again permissions
                         FB.api(
