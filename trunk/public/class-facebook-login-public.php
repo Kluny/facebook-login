@@ -97,11 +97,13 @@ class Facebook_Login_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
+        global $wp;
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/facebook-login.js', array( 'jquery' ), $this->version, false );
 		wp_localize_script( $this->plugin_name, 'fbl', apply_filters( 'fbl/js_vars', array(
 			'ajaxurl'      => admin_url('admin-ajax.php'),
 			'site_url'     => home_url(),
+			'current_page' => home_url( $wp->request ),
 			'scopes'       => apply_filters('fbl/app_scopes','email,public_profile'),
 			'appId'        => $this->opts['fb_id'],
 			'l18n'         => array(
@@ -243,11 +245,6 @@ class Facebook_Login_Public {
 			$parsed_get_url = parse_url( $_GET['redirect_to'] );
 			if( $parsed_get_url['host'] === $parsed_home_url['host'] ) {
 				$redirect = esc_url( $_GET['redirect_to'] );
-			}
-		} else if( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
-			$parsed_referer = parse_url( $_SERVER['HTTP_REFERER'] );
-			if( $parsed_referer['host'] === $parsed_home_url['host'] ) {
-				$redirect = esc_url( $_SERVER['HTTP_REFERER'] );
 			}
 		}
 

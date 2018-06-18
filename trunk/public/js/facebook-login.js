@@ -37,7 +37,9 @@ function fbl_loginCheck() {
                 url: fbl.ajaxurl,
                 success: function (data) {
                     if (data && data.success) {
-                        if( data.redirect && data.redirect.length ) {
+                        if ( fbl.current_page && fbl.current_page.length ) {
+                            location.href = fbl.current_page;
+                        } else if( data.redirect && data.redirect.length ) {
                             location.href = data.redirect;
                         } else {
                             location.href = fbl.site_url;
