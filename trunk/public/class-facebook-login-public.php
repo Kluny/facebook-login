@@ -233,20 +233,31 @@ class Facebook_Login_Public {
 		$args['autoLogAppEvents'] = true;
 	}
 
+
+	/**
+     * Url to redirect to after login.
+     *
+	 * @return string
+	 */
+	public function redirect() {
+		$redirect = home_url();
+		$parsed_home_url = parse_url( home_url() );
+		if( ! empty( $_GET['redirect_to'] ) ) {
+			$parsed_get_url = parse_url( $_GET['redirect_to'] );
+			if( $parsed_get_url['host'] === $parsed_home_url['host'] ) {
+				$redirect = esc_url( $_GET['redirect_to'] );
+			}
+		}
+		return $redirect;
+	}
+
 	/**
 	 * Main function that handles user login/ registration
 	 */
 	public function login_or_register_user() {
 		check_ajax_referer( 'facebook-nonce', 'security' );
 
-		$redirect = home_url();
-		$parsed_home_url = parse_url( home_url() );
-        if( ! empty( $_GET['redirect_to'] ) ) {
-			$parsed_get_url = parse_url( $_GET['redirect_to'] );
-			if( $parsed_get_url['host'] === $parsed_home_url['host'] ) {
-				$redirect = esc_url( $_GET['redirect_to'] );
-			}
-		}
+		$redirect = $this->redirect();
 
 		$access_token = isset( $_POST['fb_response']['authResponse']['accessToken'] ) ? sanitize_text_field( ( $_POST['fb_response']['authResponse']['accessToken'] ) ) : '';
 		$fb_user_id = sanitize_text_field( $_POST['fb_response']['authResponse']['userID'] );
@@ -711,14 +722,7 @@ class Facebook_Login_Public {
 		delete_user_meta( $current_user->ID, '_fb_user_id' );
 		// refresh page
 
-		$redirect = home_url();
-		$parsed_home_url = parse_url( home_url() );
-		if( ! empty( $_GET['redirect_to'] ) ) {
-			$parsed_get_url = parse_url( $_GET['redirect_to'] );
-			if( $parsed_get_url['host'] === $parsed_home_url['host'] ) {
-				$redirect = esc_url( $_GET['redirect_to'] );
-			}
-		}
+		$redirect = $this->redirect();
 
 		wp_safe_redirect( $redirect );
 		exit();
