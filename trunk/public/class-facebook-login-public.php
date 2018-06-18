@@ -147,7 +147,7 @@ class Facebook_Login_Public {
 	 * @since 1.1
 	 */
 	public function print_disconnect_button( ) {
-		$redirect = apply_filters( 'flp/disconnect_redirect_url', get_home_url( 1, $_SERVER['REQUEST_URI'] ) );
+		$redirect = apply_filters( 'flp/disconnect_redirect_url', $this->redirect() );
 
 		echo apply_filters('fbl/disconnect_button',
             '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect_to='. rawurlencode( $redirect ).'" class="css-fbl ">
@@ -242,13 +242,16 @@ class Facebook_Login_Public {
 	public function redirect() {
 		$redirect = home_url();
 		$parsed_home_url = parse_url( home_url() );
-		if( ! empty( $_GET['redirect_to'] ) ) {
-			$parsed_get_url = parse_url( $_GET['redirect_to'] );
-			if( $parsed_get_url['host'] === $parsed_home_url['host'] ) {
-				$redirect = esc_url( $_GET['redirect_to'] );
-			}
-		}
-		return $redirect;
+		
+		$referrer = parse_url( urldecode( wp_get_referer() ) );
+        if(! empty( $referrer['query']) ) {
+	        parse_str( $referrer['query'], $querystring );
+
+            if( $referrer['host'] === $parsed_home_url['host'] && ( ! empty( $querystring['redirect_to'] ) ) ) {
+                $redirect = esc_url( $querystring['redirect_to'] );
+            }
+        }
+        return $redirect;
 	}
 
 	/**
