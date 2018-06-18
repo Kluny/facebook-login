@@ -13,7 +13,6 @@ function fbl_loginCheck() {
     FBL.handleResponse = function( response ) {
         var button          =  $('.fbl-button'),
             $form_obj       = button.parents('form') || false,
-            $redirect_to    = $form_obj.find('input[name="redirect_to"]').val() || button.data('redirect'),
             running         = false;
         /**
          * If we get a successful authorization response we handle it
