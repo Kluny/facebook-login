@@ -235,8 +235,8 @@ class Facebook_Login_Public {
 
 
 	/**
-     * Url to redirect to after login.
-     *
+	 * Url to redirect to after login.
+	 *
 	 * @return string
 	 */
 	public function redirect() {
@@ -244,14 +244,14 @@ class Facebook_Login_Public {
 		$parsed_home_url = parse_url( home_url() );
 		
 		$referrer = parse_url( urldecode( wp_get_referer() ) );
-        if(! empty( $referrer['query']) ) {
-	        parse_str( $referrer['query'], $querystring );
+		if(! empty( $referrer['query']) ) {
+			parse_str( $referrer['query'], $querystring );
 
-            if( $referrer['host'] === $parsed_home_url['host'] && ( ! empty( $querystring['redirect_to'] ) ) ) {
-                $redirect = esc_url( $querystring['redirect_to'] );
-            }
-        }
-        return $redirect;
+			if( $referrer['host'] === $parsed_home_url['host'] && ( ! empty( $querystring['redirect_to'] ) ) ) {
+				$redirect = esc_url( $querystring['redirect_to'] );
+			}
+		}
+		return $redirect;
 	}
 
 	/**
