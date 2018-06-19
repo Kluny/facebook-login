@@ -13,7 +13,6 @@ function fbl_loginCheck() {
     FBL.handleResponse = function( response ) {
         var button          =  $('.fbl-button'),
             $form_obj       = button.parents('form') || false,
-            $redirect_to    = $form_obj.find('input[name="redirect_to"]').val() || button.data('redirect'),
             running         = false;
         /**
          * If we get a successful authorization response we handle it
@@ -38,10 +37,10 @@ function fbl_loginCheck() {
                 url: fbl.ajaxurl,
                 success: function (data) {
                     if (data && data.success) {
-                        if( data.redirect && data.redirect.length ) {
+                        if ( fbl.current_page && fbl.current_page.length ) {
+                            location.href = fbl.current_page;
+                        } else if( data.redirect && data.redirect.length ) {
                             location.href = data.redirect;
-                        } else if ( $redirect_to.length ) {
-                            location.href = $redirect_to;
                         } else {
                             location.href = fbl.site_url;
                         }
@@ -49,11 +48,17 @@ function fbl_loginCheck() {
                         $('.fbl-spinner').hide();
                         $('.fb-login-button').show();
 
+                        var errorMessage = document.createElement('p')
+                        errorMessage.setAttribute('class', 'fbl_error');
+                        errorMessage.append(document.createTextNode(data.error));
+
                         if ($form_obj.length) {
-                            $form_obj.append('<p class="fbl_error">' + data.error + '</p>');
+                            var node = document.createElement('p');
+                            node.setAttribute('class', 'fbl_error').createTextNode(data.error);
+                            $form_obj.append(errorMessage);
                         } else {
                             // we just have a button
-                            $('<p class="fbl_error">' + data.error + '</p>').insertAfter(button);
+                            $(errorMessage).insertAfter(button);
                         }
                         // if we had any error remove user from app so we request again permissions
                         FB.api(

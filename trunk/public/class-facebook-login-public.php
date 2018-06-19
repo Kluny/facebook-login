@@ -97,11 +97,13 @@ class Facebook_Login_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
+        global $wp;
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/facebook-login.js', array( 'jquery' ), $this->version, false );
 		wp_localize_script( $this->plugin_name, 'fbl', apply_filters( 'fbl/js_vars', array(
 			'ajaxurl'      => admin_url('admin-ajax.php'),
 			'site_url'     => home_url(),
+			'current_page' => home_url( $wp->request ),
 			'scopes'       => apply_filters('fbl/app_scopes','email,public_profile'),
 			'appId'        => $this->opts['fb_id'],
 			'l18n'         => array(
@@ -115,15 +117,29 @@ class Facebook_Login_Public {
 	 * @since   1.0.0
 	 */
 	public function print_button() {
-		$redirect = ! empty( $_GET['redirect_to'] ) ? esc_url($_GET['redirect_to']) : ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 
-		// if we are in login page we don't want to redirect back to it
-		if ( isset( $GLOBALS['pagenow'] ) && in_array( $GLOBALS['pagenow'], array( 'wp-login.php', 'wp-register.php' ) ) && empty($_GET['redirect_to']) )
-			$redirect = '';
-		echo apply_filters('fbl/login_button',  '<div class="fbl-button" data-redirect="'.apply_filters( 'flp/redirect_url', $redirect).'" data-fb_nonce="' . wp_create_nonce( 'facebook-nonce' ).'">
-			<img data-no-lazy="1" src="'.plugin_dir_url(__FILE__).'img/loading.svg'.'" alt="" class="fbl-spinner"/>
-		<div class="fb-login-button" data-max-rows="1" onlogin="fbl_loginCheck" data-width="'.apply_filters( 'flp/button/width', '').'" data-size="'.apply_filters( 'flp/button/size', 'large').'" data-button-type="'.apply_filters( 'flp/button/type', 'login_with').'" data-show-faces="false" data-auth-type="rerequest" data-auto-logout-link="false" data-use-continue-as="'.apply_filters( 'flp/button/show_face', 'true').'" data-scope="'.apply_filters('fbl/app_scopes','email,public_profile').'"></div>
-		</div>');
+		echo apply_filters('fbl/login_button',
+            '<div class="fbl-button"
+                        data-fb_nonce="' . wp_create_nonce( 'facebook-nonce' ).'">
+                <img data-no-lazy="1" 
+			            src="' . plugin_dir_url(__FILE__ ) . 'img/loading.svg' . '" 
+			            alt="" 
+			            class="fbl-spinner"/>
+		        <div class="fb-login-button" 
+		                data-max-rows="1" 
+		                onlogin="fbl_loginCheck" 
+		                data-width="' . esc_attr( apply_filters( 'flp/button/width', '' ) ) . '" 
+		                data-size="' . esc_attr( apply_filters( 'flp/button/size', 'large' ) ) . '" 
+		                data-button-type="' . esc_attr( apply_filters( 'flp/button/type', 'login_with' ) ) . '" 
+		                data-show-faces="false" 
+		                data-auth-type="rerequest" 
+		                data-auto-logout-link="false" 
+		                data-use-continue-as="' . esc_attr( apply_filters( 'flp/button/show_face', 'true' ) ) . '" 
+		                data-scope="' . esc_attr( apply_filters( 'fbl/app_scopes','email,public_profile' ) ) . '">
+                </div>
+		    </div>'
+        );
+
 	}
 
 	/**
@@ -131,10 +147,18 @@ class Facebook_Login_Public {
 	 * @since 1.1
 	 */
 	public function print_disconnect_button( ) {
+		$redirect = apply_filters( 'flp/disconnect_redirect_url', $this->redirect() );
 
-		$redirect = apply_filters( 'flp/disconnect_redirect_url', ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
-
-		echo apply_filters('fbl/disconnect_button', '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect='.urlencode( $redirect ).'" class="css-fbl "><div>'. __('Disconnect Facebook', 'fbl') .'<img data-no-lazy="1" src="'.site_url('/wp-includes/js/mediaelement/loading.gif').'" alt="" style="display:none"/></div></a>');
+		echo apply_filters('fbl/disconnect_button',
+            '<a href="?fbl_disconnect&fb_nonce='. wp_create_nonce( 'fbl_disconnect' ) .'&redirect_to='. rawurlencode( $redirect ).'" class="css-fbl ">
+                <div>'. esc_html__('Disconnect Facebook', 'fbl') .'
+                    <img data-no-lazy="1" 
+                            src="' . rawurlencode( site_url('/wp-includes/js/mediaelement/loading.gif') ) . '" 
+                            alt="" 
+                            style="display:none"/>
+                </div>
+            </a>'
+        );
 
 	}
 	/**
@@ -159,7 +183,7 @@ class Facebook_Login_Public {
 			function fbl_init(){
 			    try{
 	                window.FB.init({
-	                    appId      : '<?php echo trim( $this->opts['fb_id'] );?>',
+	                    appId      : '<?php echo trim( esc_js( $this->opts['fb_id'] ) );?>',
 	                    cookie     : true,
 	                    xfbml      : true,
 	                    status     : false,
@@ -187,7 +211,10 @@ class Facebook_Login_Public {
 				var js, fjs = d.getElementsByTagName(s)[0];
 				if (d.getElementById(id)) return;
 				js = d.createElement(s); js.id = id;
-				js.src = "//connect.facebook.net/<?= $this->locale;?>/sdk.js";
+            <?php   // WPCS: XSS Ok.
+                    // Value of $this->locale is thoroughly escaped
+                    // elsewhere in this file; see set_locale(). ?>
+				js.src = "//connect.facebook.net/<?php echo $this->locale; ?>/sdk.js";
 				fjs.parentNode.insertBefore(js, fjs);
 			}(document, 'script', 'facebook-jssdk'));
 
@@ -206,14 +233,37 @@ class Facebook_Login_Public {
 		$args['autoLogAppEvents'] = true;
 	}
 
+
+	/**
+	 * Url to redirect to after login.
+	 *
+	 * @return string
+	 */
+	public function redirect() {
+		$redirect = home_url();
+		$parsed_home_url = parse_url( home_url() );
+		
+		$referrer = parse_url( urldecode( wp_get_referer() ) );
+		if(! empty( $referrer['query']) ) {
+			parse_str( $referrer['query'], $querystring );
+
+			if( $referrer['host'] === $parsed_home_url['host'] && ( ! empty( $querystring['redirect_to'] ) ) ) {
+				$redirect = esc_url( $querystring['redirect_to'] );
+			}
+		}
+		return $redirect;
+	}
+
 	/**
 	 * Main function that handles user login/ registration
 	 */
 	public function login_or_register_user() {
 		check_ajax_referer( 'facebook-nonce', 'security' );
 
-		$access_token = isset( $_POST['fb_response']['authResponse']['accessToken'] ) ? $_POST['fb_response']['authResponse']['accessToken'] : '';
-		$fb_user_id = $_POST['fb_response']['authResponse']['userID'];
+		$redirect = $this->redirect();
+
+		$access_token = isset( $_POST['fb_response']['authResponse']['accessToken'] ) ? sanitize_text_field( ( $_POST['fb_response']['authResponse']['accessToken'] ) ) : '';
+		$fb_user_id = sanitize_text_field( $_POST['fb_response']['authResponse']['userID'] );
 		// Get user from Facebook with given access token
 		$fb_url = add_query_arg(
 			apply_filters( 'fbl/js_auth_data',
@@ -235,7 +285,11 @@ class Facebook_Login_Public {
 			);
 		}
 
-		$fb_response = wp_remote_get( esc_url_raw( $fb_url ), array( 'timeout' => 30 ) );
+		if( function_exists( 'vip_safe_remote_get' ) ) {
+			$fb_response = vip_safe_remote_get( esc_url_raw( $fb_url ), array( 'timeout' => 5 ) );
+		} else {
+			$fb_response = wp_remote_get( esc_url_raw( $fb_url ), array( 'timeout' => 5 ) );
+		}
 
 		if( is_wp_error( $fb_response ) )
 			$this->ajax_response( array( 'error' => $fb_response->get_error_message() ) );
@@ -243,11 +297,11 @@ class Facebook_Login_Public {
 		$fb_user = apply_filters( 'fbl/auth_data',json_decode( wp_remote_retrieve_body( $fb_response ), true ) );
 
 		if( isset( $fb_user['error'] ) )
-			$this->ajax_response( array( 'error' => 'Error code: '. $fb_user['error']['code'] . ' - ' . $fb_user['error']['message'] ) );
+			$this->ajax_response( array( 'error' => esc_html__( 'Error code: ' ). $fb_user['error']['code'] . ' - ' . $fb_user['error']['message'] ) );
 
 		//check if user at least provided email
 		if( empty( $fb_user['email'] ) )
-			$this->ajax_response( array( 'error' => __('We need your email in order to continue. Please try loging again. ', 'fbl' ),'fb' => $fb_user) );
+			$this->ajax_response( array( 'error' => esc_html__('We need your email in order to continue. Please try logging again. ', 'fbl' ),'fb' => $fb_user) );
 
 		// Map our FB response fields to the correct user fields as found in wp_update_user
 		$user = apply_filters( 'fbl/user_data_login', array(
@@ -260,7 +314,7 @@ class Facebook_Login_Public {
 
 		do_action( 'fbl/before_login', $user);
 
-		$status = array( 'error' => __( 'Invalid User', 'fbl' ) );
+		$status = array( 'error' => esc_html__( 'Invalid User', 'fbl' ) );
 
 		if ( empty( $user['fb_user_id'] ) )
 			$this->ajax_response( $status );
@@ -271,7 +325,7 @@ class Facebook_Login_Public {
 
 		if ( $user_obj ){
 			$user_id = $user_obj->ID;
-			$status = array( 'success' => $user_id, 'method' => 'login');
+			$status = array( 'success' => $user_id, 'method' => 'login', 'redirect' => $redirect);
 			// check if user email exist or update accordingly
 			if( empty( $user_obj->user_email ) )
 				wp_update_user( array( 'ID' => $user_id, 'user_email' => $user['user_email'] ) );
@@ -289,14 +343,15 @@ class Facebook_Login_Public {
 				$this->notify_new_registration( $user_id );
 				update_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
 				$meta_updated = true;
-				$status = array( 'success' => $user_id, 'method' => 'registration' );
+
+				$status = array( 'success' => $user_id, 'method' => 'registration', 'redirect' => $redirect );
 			}
 		}
 		if( is_numeric( $user_id ) ) {
 			wp_set_auth_cookie( $user_id, true );
 			if( !$meta_updated )
 				update_user_meta( $user_id, '_fb_user_id', $user['fb_user_id'] );
-			do_action( 'fbl/after_login', $user, $user_id);
+			    do_action( 'fbl/after_login', $user, $user_id);
 		}
 		$this->ajax_response( apply_filters( 'fbl/success_status', $status ) );
 	}
@@ -363,10 +418,8 @@ class Facebook_Login_Public {
 
 			// get avatar with facebook id
 			if ( $fb_id = get_user_meta( $user_id, '_fb_user_id', true ) ) {
-
 				$fb_url = 'https://graph.facebook.com/' . $fb_id . '/picture?width=' . $size . '&height=' . $size;
-				$avatar = "<img alt='{$alt}' src='{$fb_url}' class='avatar avatar-{$size} photo' height='{$size}' width='{$size}' />";
-
+				$avatar = "<img alt='" . esc_attr( $alt ) . "' src='" . esc_url( $fb_url ) . "' class='avatar avatar-" .  esc_attr( $size ) . " photo' height='" .  esc_attr( $size ) . "' width='" .  esc_attr( $size ) . "' />";
 			}
 
 		}
@@ -472,7 +525,7 @@ class Facebook_Login_Public {
 		}
 
 		// only for users
-		if( $params['object'] != 'user' )
+		if( $params['object'] !== 'user' )
 			return $avatar_url;
 
 		$fb_id = get_user_meta( $params['item_id'], '_fb_user_id', true );
@@ -486,12 +539,12 @@ class Facebook_Login_Public {
 
 			$gravatar = apply_filters( 'bp_gravatar_url', '//www.gravatar.com/avatar/' );
 
-			if ( strpos( $avatar_url, $gravatar) === false && $avatar_url != bp_core_avatar_default( 'local' ) ) {
+			if ( strpos( $avatar_url, $gravatar) === false && $avatar_url !== bp_core_avatar_default( 'local' ) ) {
 				return $avatar_url;
 			}
 		}
 
-		return 'https://graph.facebook.com/' . $fb_id . '/picture?width=' . $params['width'] . '&height=' . $params['height'];
+		return 'https://graph.facebook.com/' . esc_attr( $fb_id ) . '/picture?width=' . esc_attr( $params['width'] ) . '&height=' . esc_attr( $params['height'] );
 	}
 	/**
 	 * Function to send ajax response in script
@@ -556,19 +609,45 @@ class Facebook_Login_Public {
 
 		// User name can't be on the blacklist or empty
 		$illegal_names = get_site_option( 'illegal_names' );
-		if ( empty( $username ) || in_array( $username, (array) $illegal_names ) ) {
+		if ( empty( $username ) || in_array( $username, (array) $illegal_names, true ) ) {
 			// we used all our options to generate a nice username. Use id instead
 			$username = 'fbl_' . $user['id'];
 		}
 
-		// "generate" unique suffix
-		$suffix = $wpdb->get_var( $wpdb->prepare(
-			"SELECT 1 + SUBSTR(user_login, %d) FROM $wpdb->users WHERE user_login REGEXP %s ORDER BY 1 DESC LIMIT 1",
-			strlen( $username ) + 2, '^' . $username . '(-[0-9]+)?$' ) );
+		// "Generate" unique suffix. Finds out how many existing users are in the database with the given username (minus numerical suffix), and appends that number to the new username as a pseudounique suffix.
+        // Eg. "SELECT 1 + SUBSTR(user_login, 9) FROM wp_users WHERE user_login REGEXP '^shannon(-[0-9]+)?$' ORDER BY 1 DESC LIMIT 1".
+        // If user 'shannon' exists, result is one field in one row containing "1". That number is appended to username.
+		$args = array(
+			'search'         => esc_attr( $username ) . '*',
+			'search_columns' => array( 'user_login' ),
+			'fields'         => array( 'user_login' ),
+			'count_total'    => false,
+			'orderby'        => 'user_login',
+			'order'          => 'DESC'
+		);
 
-		if( !empty( $suffix ) ) {
-			$username .= "-{$suffix}";
+		$user_query = new \WP_User_Query( $args );
+		$users = $user_query->get_results();
+		if ( ! empty( $users ) ) {
+			// pluck the user_login into an array
+			$users = wp_list_pluck( $users, 'user_login' );
+			// filter the user_login to limit to the `username-` pattern
+			$users = preg_grep( '/^' . $username . '(-[0-9]+)?$/', $users );
+
+			// get the first user_login, the query already sorted the user_login in DESC order
+			if ( ! empty( $users ) && is_array( $users ) && ! empty( $first_user = array_shift( $users ) ) ) {
+				// Get the int suffix
+				$suffix = (int) str_replace( "$username-", '', $first_user );
+				// if we have a valid int suffix, increment it and add it to the username
+				if ( ! empty( $suffix ) ) {
+					$username .= '-' . ++$suffix;
+				} else if ( $first_user === $username ) {
+					// we already have a user with the same login, append 1 as the suffix
+					$username .= '-1';
+				}
+			}
 		}
+		
 		return apply_filters( 'fbl/generateUsername', $username );
 	}
 
@@ -620,10 +699,10 @@ class Facebook_Login_Public {
 		<label for="fbl_connection"><?php _e("Facebook connection", 'fbl'); ?></label><?php
 		$fb_id = get_user_meta( $current_user->ID, '_fb_user_id' );
 		if( $fb_id ) {
-			_e( 'Your profile is currently linked to your Facebook account. Click the button below to remove connection and avatar', 'fbl' );
+			esc_html_e( 'Your profile is currently linked to your Facebook account. Click the button below to remove connection and avatar', 'fbl' );
 			do_action('facebook_disconnect_button');
 		} else {
-			_e( 'Link your facebook account to your profile.', 'fbl' );
+			esc_html_e( 'Link your facebook account to your profile.', 'fbl' );
 			echo '<br>';
 			do_action('facebook_login_button');
 		}
@@ -645,7 +724,10 @@ class Facebook_Login_Public {
 
 		delete_user_meta( $current_user->ID, '_fb_user_id' );
 		// refresh page
-		wp_redirect( esc_url( $_GET['redirect'] ) );
+
+		$redirect = $this->redirect();
+
+		wp_safe_redirect( $redirect );
 		exit();
 	}
 

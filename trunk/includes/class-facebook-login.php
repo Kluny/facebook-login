@@ -106,7 +106,7 @@ class Facebook_Login {
 	 * @since 1.0.0
 	 */
 	public function __clone() {
-		_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'wsi' ), '2.1' );
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin&#8217; huh?', 'wsi' ), '2.1' );
 	}
 
 	/**
@@ -114,7 +114,7 @@ class Facebook_Login {
 	 * @since 1.0.0
 	 */
 	public function __wakeup() {
-		_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'wsi' ), '2.1' );
+		_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin&#8217; huh?', 'wsi' ), '2.1' );
 	}
 
 	/**
@@ -124,7 +124,7 @@ class Facebook_Login {
 	 * @return mixed
 	 */
 	public function __get( $key ) {
-		if ( in_array( $key, array( 'payment_gateways', 'shipping', 'mailer', 'checkout' ) ) ) {
+		if ( in_array( $key, array( 'payment_gateways', 'shipping', 'mailer', 'checkout' ), true ) ) {
 			return $this->$key();
 		}
 	}
